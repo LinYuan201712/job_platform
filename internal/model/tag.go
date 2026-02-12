@@ -11,5 +11,5 @@ type Tag struct {
 }
 
 func (Tag) TableName() string {
-	return "tag"
+	return "tags"
 }

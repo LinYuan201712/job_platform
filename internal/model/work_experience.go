@@ -13,5 +13,5 @@ type WorkExperience struct {
 }
 
 func (WorkExperience) TableName() string {
-	return "work_experience"
+	return "work_experiences"
 }

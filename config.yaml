@@ -2,7 +2,7 @@ server:
   port: 8080
 
 database:
-  dsn: "root:sysu@tcp(localhost:3306)/job_db?charset=utf8mb4&parseTime=True&loc=Local"
+  dsn: "root:sysu@tcp(localhost:3306)/job_platform?charset=utf8mb4&parseTime=True&loc=Local"
 
 jwt:
   secret: "dGhpc19pc19hX3NlY3VyZV9hbmRfbG9uZy1rZXkZm9yX2Rldg"

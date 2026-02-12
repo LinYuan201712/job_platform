@@ -2,9 +2,9 @@ package model
 
 // UserRole
 const (
-	UserRoleStudent = 0
-	UserRoleHr      = 1
-	UserRoleAdmin   = 2
+	UserRoleStudent = 1
+	UserRoleHr      = 2
+	UserRoleAdmin   = 0 // 预留管理员角色
 )
 
 // UserStatus

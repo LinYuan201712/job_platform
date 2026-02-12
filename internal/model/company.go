@@ -5,8 +5,8 @@ import "time"
 // Company 对应数据库表: company
 type Company struct {
 	CompanyID          int       `gorm:"column:company_id;primaryKey;autoIncrement" json:"company_id"`
-	UserID             int       `gorm:"column:user_id;not null" json:"user_id"` // 关联 User.ID
-	CompanyName        string    `gorm:"column:company_name;not null" json:"company_name"`
+	UserID             int       `gorm:"column:user_id" json:"user_id"` // 关联 User.ID (可为空)
+	CompanyName        string    `gorm:"column:company_name" json:"company_name"`
 	Description        string    `gorm:"column:description;type:text" json:"description"`
 	LogoUrl            string    `gorm:"column:logo_url" json:"logo_url"`
 	IndustryID         int       `gorm:"column:industry_id" json:"industry_id"`
