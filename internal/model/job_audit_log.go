@@ -13,5 +13,5 @@ type JobAuditLog struct {
 }
 
 func (JobAuditLog) TableName() string {
-	return "job_audit_log"
+	return "job_audit_logs"
 }

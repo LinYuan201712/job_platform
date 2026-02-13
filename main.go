@@ -26,6 +26,13 @@ func main() {
 	jobRepo := &repository.JobRepository{DB: DB}
 	tagRepo := &repository.TagRepository{DB: DB}
 	jobAuditRepo := &repository.JobAuditRepository{DB: DB}
+	studentRepo := &repository.StudentRepository{DB: DB}
+	educationRepo := &repository.EducationExperienceRepository{DB: DB}
+	workExpRepo := &repository.WorkExperienceRepository{DB: DB}
+	projectExpRepo := &repository.ProjectExperienceRepository{DB: DB}
+	orgExpRepo := &repository.OrganizationExperienceRepository{DB: DB}
+	compExpRepo := &repository.CompetitionExperienceRepository{DB: DB}
+	resumeRepo := &repository.ResumeRepository{DB: DB}
 
 	// 2. 初始化 Service
 	authService := &service.AuthService{DB: DB}
@@ -37,6 +44,22 @@ func main() {
 	tagService := &service.TagService{TagRepo: tagRepo}
 	jobAuditService := &service.JobAuditService{AuditRepo: jobAuditRepo}
 	jobParseService := &service.JobParseService{}
+	resumeService := &service.ResumeService{
+		DB:               DB,
+		StudentRepo:      studentRepo,
+		EducationRepo:    educationRepo,
+		WorkRepo:         workExpRepo,
+		ProjectRepo:      projectExpRepo,
+		OrganizationRepo: orgExpRepo,
+		CompetitionRepo:  compExpRepo,
+		ResumeRepo:       resumeRepo,
+	}
+	experienceService := &service.ExperienceService{
+		WorkRepo:         workExpRepo,
+		ProjectRepo:      projectExpRepo,
+		OrganizationRepo: orgExpRepo,
+		CompetitionRepo:  compExpRepo,
+	}
 
 	// 3. 初始化 Controller
 	authController := &controller.AuthController{Service: authService}
@@ -46,6 +69,10 @@ func main() {
 		JobParseService: jobParseService,
 	}
 	tagController := &controller.TagController{TagService: tagService}
+	resumeController := &controller.ResumeController{
+		ResumeService:     resumeService,
+		ExperienceService: experienceService,
+	}
 
 	// --- 路由设置 ---
 	r := gin.Default()
@@ -60,7 +87,7 @@ func main() {
 	}
 
 	// 受保护接口 (需要 Token)
-	protected := r.Group("/api")
+	protected := r.Group("/")
 	protected.Use(middleware.JWTAuth()) // 挂载中间件
 	{
 		// 测试接口
@@ -96,6 +123,40 @@ func main() {
 
 			// 岗位智能解析 (AI)
 			hr.POST("/jobs/parse", jobController.ParseJob)
+		}
+
+		// 学生简历中心接口
+		resumeCenter := protected.Group("/resume-center")
+		{
+			// 简历草稿
+			resumeCenter.GET("/resume_draft", resumeController.GetResumeDraft)
+			resumeCenter.PUT("/resume_draft/skills", resumeController.UpdateSkills)
+			resumeCenter.PATCH("/resume_draft/template", resumeController.SetTemplate)
+
+			// 简历文件
+			resumeCenter.POST("/resume_files/upload", resumeController.UploadResumeFile)
+			resumeCenter.GET("/resume_files", resumeController.GetResumeFiles)
+			resumeCenter.DELETE("/resume_files/:id", resumeController.DeleteResumeFile)
+
+			// 工作经历
+			resumeCenter.POST("/resume_draft/work_experiences", resumeController.CreateWorkExperience)
+			resumeCenter.PUT("/resume_draft/work_experiences/:id", resumeController.UpdateWorkExperience)
+			resumeCenter.DELETE("/resume_draft/work_experiences/:id", resumeController.DeleteWorkExperience)
+
+			// 项目经历
+			resumeCenter.POST("/resume_draft/projects", resumeController.CreateProjectExperience)
+			resumeCenter.PUT("/resume_draft/projects/:id", resumeController.UpdateProjectExperience)
+			resumeCenter.DELETE("/resume_draft/projects/:id", resumeController.DeleteProjectExperience)
+
+			// 组织经历
+			resumeCenter.POST("/resume_draft/organizations", resumeController.CreateOrganizationExperience)
+			resumeCenter.PUT("/resume_draft/organizations/:id", resumeController.UpdateOrganizationExperience)
+			resumeCenter.DELETE("/resume_draft/organizations/:id", resumeController.DeleteOrganizationExperience)
+
+			// 竞赛经历
+			resumeCenter.POST("/resume_draft/competitions", resumeController.CreateCompetitionExperience)
+			resumeCenter.PUT("/resume_draft/competitions/:id", resumeController.UpdateCompetitionExperience)
+			resumeCenter.DELETE("/resume_draft/competitions/:id", resumeController.DeleteCompetitionExperience)
 		}
 	}
 

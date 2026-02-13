@@ -6,5 +6,5 @@ type JobCategory struct {
 }
 
 func (JobCategory) TableName() string {
-	return "job_category"
+	return "job_categories"
 }
