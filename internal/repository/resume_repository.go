@@ -65,3 +65,8 @@ func (r *ResumeRepository) CheckResumeUsedInApplications(resumeID int64) (bool, 
 
 	return count > 0, nil
 }
+
+// GetResumeByID 根据ID获取简历(用于投递验证)
+func (r *ResumeRepository) GetResumeByID(resumeID int64) (*model.Resume, error) {
+	return r.FindByID(resumeID)
+}

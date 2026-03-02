@@ -33,3 +33,33 @@ func (r *StudentRepository) UpdateTemplate(userID int, templateID int64) error {
 		Where("user_id = ?", userID).
 		Update("current_template_id", templateID).Error
 }
+
+// Create 创建学生记录
+func (r *StudentRepository) Create(student *model.Student) error {
+	return r.DB.Create(student).Error
+}
+
+// Update 更新学生信息
+func (r *StudentRepository) Update(student *model.Student) error {
+	return r.DB.Save(student).Error
+}
+
+// FindByUserIDWithUser 根据用户ID查询学生信息，同时返回User信息
+func (r *StudentRepository) FindByUserIDWithUser(userID int) (*model.Student, *model.User, error) {
+	var student model.Student
+	var user model.User
+
+	// 查询学生信息
+	err := r.DB.Where("user_id = ?", userID).First(&student).Error
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// 查询用户信息
+	err = r.DB.Where("id = ?", userID).First(&user).Error
+	if err != nil {
+		return &student, nil, err
+	}
+
+	return &student, &user, nil
+}

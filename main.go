@@ -33,6 +33,16 @@ func main() {
 	orgExpRepo := &repository.OrganizationExperienceRepository{DB: DB}
 	compExpRepo := &repository.CompetitionExperienceRepository{DB: DB}
 	resumeRepo := &repository.ResumeRepository{DB: DB}
+	userRepo := &repository.UserRepository{DB: DB}
+
+	// 求职中心相关Repository
+	jobFavoriteRepo := &repository.JobFavoriteRepository{DB: DB}
+	applicationRepo := &repository.ApplicationRepository{DB: DB}
+	companyRepo := &repository.CompanyRepository{DB: DB}
+
+	// 学生主页和活动相关Repository
+	eventRepo := &repository.EventRepository{DB: DB}
+	applicationStatusRepo := &repository.ApplicationStatusRepository{DB: DB}
 
 	// 2. 初始化 Service
 	authService := &service.AuthService{DB: DB}
@@ -60,6 +70,63 @@ func main() {
 		OrganizationRepo: orgExpRepo,
 		CompetitionRepo:  compExpRepo,
 	}
+	studentProfileService := &service.StudentProfileService{
+		StudentRepo:   studentRepo,
+		EducationRepo: educationRepo,
+		TagRepo:       tagRepo,
+		UserRepo:      userRepo,
+		DB:            DB,
+	}
+
+	// 求职中心相关Service
+	jobCenterService := &service.JobCenterService{
+		JobRepo:         jobRepo,
+		FavoriteRepo:    jobFavoriteRepo,
+		ApplicationRepo: applicationRepo,
+		CompanyRepo:     companyRepo,
+		DB:              DB,
+	}
+	favoriteService := &service.FavoriteService{
+		FavoriteRepo: jobFavoriteRepo,
+		JobRepo:      jobRepo,
+		DB:           DB,
+	}
+	applicationService := &service.ApplicationService{
+		ApplicationRepo:       applicationRepo,
+		ApplicationStatusRepo: applicationStatusRepo,
+		JobRepo:               jobRepo,
+		ResumeRepo:            resumeRepo,
+		CompanyRepo:           companyRepo,
+		FavoriteRepo:          jobFavoriteRepo,
+		DB:                    DB,
+	}
+	companyService := &service.CompanyService{
+		CompanyRepo: companyRepo,
+		DB:          DB,
+	}
+
+	// 学生主页和活动相关Service
+	studentDashboardService := &service.StudentDashboardService{
+		StudentRepo: studentRepo,
+		EventRepo:   eventRepo,
+		JobRepo:     jobRepo,
+		DB:          DB,
+	}
+	eventService := &service.EventService{
+		EventRepo: eventRepo,
+	}
+
+	// HR人才库和企业信息管理Service
+	dictRepo := &repository.DictionaryRepository{DB: DB}
+	hrTalentpoolService := &service.HRTalentpoolService{
+		ApplicationRepo: applicationRepo,
+		JobRepo:         jobRepo,
+		StudentRepo:     studentRepo,
+		ResumeRepo:      resumeRepo,
+		EducationRepo:   educationRepo,
+		TagRepo:         tagRepo,
+		DB:              DB,
+	}
 
 	// 3. 初始化 Controller
 	authController := &controller.AuthController{Service: authService}
@@ -73,17 +140,55 @@ func main() {
 		ResumeService:     resumeService,
 		ExperienceService: experienceService,
 	}
+	studentProfileController := &controller.StudentProfileController{
+		Service: studentProfileService,
+	}
+
+	// 求职中心Controller
+	jobCenterController := &controller.JobCenterController{
+		JobCenterService:   jobCenterService,
+		FavoriteService:    favoriteService,
+		ApplicationService: applicationService,
+		CompanyService:     companyService,
+	}
+
+	// 学生主页和活动Controller
+	studentDashboardController := &controller.StudentDashboardController{
+		Service: studentDashboardService,
+	}
+	eventController := &controller.EventController{
+		Service: eventService,
+	}
+
+	// HR人才库和企业信息管理Controller
+	hrTalentpoolController := &controller.HRTalentpoolController{
+		Service: hrTalentpoolService,
+	}
+	companyProfileController := &controller.CompanyProfileController{
+		CompanyService: companyService,
+		DictRepo:       dictRepo,
+	}
 
 	// --- 路由设置 ---
 	r := gin.Default()
 	// 注册 CORS 中间件 (必须放在所有路由之前)
 	r.Use(middleware.CORS())
 
+	// 配置静态文件服务（头像上传）
+	r.Static("/uploads", "./uploads")
+
 	// 开放接口 (无需登录)
 	public := r.Group("/auth")
 	{
 		public.POST("/register", authController.Register)
 		public.POST("/login", authController.Login)
+	}
+
+	// 受保护的Auth接口  (需要登录but not限角色)
+	authProtected := r.Group("/auth")
+	authProtected.Use(middleware.JWTAuth())
+	{
+		authProtected.PUT("/change-password", authController.ChangePassword)
 	}
 
 	// 受保护接口 (需要 Token)
@@ -107,7 +212,8 @@ func main() {
 		protected.POST("/tags", tagController.CreateTag)
 
 		// HR 岗位管理接口
-		hr := protected.Group("/hr")
+		hr := protected.Group("/api/hr")
+		hr.Use(middleware.HRAuth(DB))
 		{
 			// 岗位基本操作
 			hr.POST("/jobs", jobController.CreateJob)
@@ -123,6 +229,24 @@ func main() {
 
 			// 岗位智能解析 (AI)
 			hr.POST("/jobs/parse", jobController.ParseJob)
+
+			// 人才库管理
+			hr.GET("/jobs", hrTalentpoolController.GetTalentPoolJobList)
+			hr.GET("/talentpool/job/list/:job_id", hrTalentpoolController.GetCandidateListByJob)
+			hr.GET("/applications/:id", hrTalentpoolController.GetApplicationDetail)
+			hr.PUT("/applications/:id/status", hrTalentpoolController.UpdateApplicationStatus)
+			hr.GET("/resume/:studentUserId", hrTalentpoolController.GetStudentResumePreview)
+
+		}
+		hr2 := protected.Group("/")
+		hr2.Use(middleware.HRAuth(DB))
+		{
+
+			// 企业信息管理
+			hr2.GET("/hr/company/profile", companyProfileController.GetCompanyProfile)
+			hr2.PUT("/hr/company/profile", companyProfileController.UpdateCompanyProfile)
+			hr2.GET("/hr/company/options", companyProfileController.GetCompanyOptions)
+			hr2.POST("/upload/company-logo", companyProfileController.UploadCompanyLogo)
 		}
 
 		// 学生简历中心接口
@@ -158,6 +282,61 @@ func main() {
 			resumeCenter.PUT("/resume_draft/competitions/:id", resumeController.UpdateCompetitionExperience)
 			resumeCenter.DELETE("/resume_draft/competitions/:id", resumeController.DeleteCompetitionExperience)
 		}
+
+		// 学生档案管理接口
+		student := protected.Group("/api/student/me")
+		{
+			student.POST("/avatar", studentProfileController.UploadAvatar)
+			student.GET("/edit-profile", studentProfileController.GetMyProfile)
+			student.GET("/welcome", studentProfileController.GetWelcomeInfo)
+			student.PUT("/change-password", studentProfileController.ChangePassword)
+			student.GET("/resume-preview", studentProfileController.GetResumePreview)
+		}
+
+		// 档案中心（不同路由前缀）
+		profileCenter := protected.Group("/profile-center/profiles/me")
+		{
+			profileCenter.PUT("/base", studentProfileController.UpdateMyBaseProfile)
+		}
+
+		// ==================== 求职中心 ====================
+		positionCenter := protected.Group("/position-center")
+		{
+			// 职位相关
+			positionCenter.GET("/jobs", jobCenterController.GetJobList)
+			positionCenter.GET("/jobs/:job_id", jobCenterController.GetJobDetail)
+
+			// 收藏相关
+			positionCenter.POST("/favorites/:job_id", jobCenterController.AddFavorite)
+			positionCenter.DELETE("/favorites/:job_id", jobCenterController.RemoveFavorite)
+			positionCenter.GET("/favorites/status/:job_id", jobCenterController.GetFavoriteStatus)
+			positionCenter.GET("/favorites", jobCenterController.GetFavoriteList)
+			positionCenter.GET("/favorites/search", jobCenterController.SearchFavorites)
+
+			// 投递相关
+			positionCenter.POST("/applications", jobCenterController.ApplyJob)
+		}
+
+		// ==================== 企业详情 ====================
+		companyCenter := protected.Group("/company-center")
+		{
+			companyCenter.GET("/detail/:company_id", jobCenterController.GetCompanyDetail)
+		}
+
+		// ==================== 学生主页 ====================
+		protected.GET("/student/me/", studentDashboardController.GetUserName)
+		protected.GET("/student/calendar", studentDashboardController.GetCalendar)
+		protected.GET("/jobs/ranked", studentDashboardController.GetRankedJobs)
+		protected.GET("/jobs/recent", studentDashboardController.GetRecentJobs)
+
+		// ==================== 招聘活动 ====================
+		protected.GET("/events/list", eventController.GetEventList)
+		protected.GET("/events/:event_id", eventController.GetEventDetail)
+		protected.GET("/events/upcoming", studentDashboardController.GetUpcomingEvents)
+
+		// ==================== 投递情况 ====================
+		protected.GET("/student/applications/:id", jobCenterController.GetApplicationDetail)
+		protected.GET("/position-center/delivery/list", jobCenterController.GetDeliveryList)
 	}
 
 	port := viper.GetString("server.port")

@@ -22,13 +22,13 @@ const (
 	JobStatusClosed   = 4
 )
 
-// ApplicationStatus
+// ApplicationStatus (对应数据库 applications.status)
 const (
-	AppStatusSubmitted = 0 // 已投递
-	AppStatusCandidate = 1 // 候选人/初筛通过
-	AppStatusInterview = 2 // 面试中
-	AppStatusPassed    = 3 // 通过/录用
-	AppStatusRejected  = 4 // 拒绝
+	AppStatusSubmitted = 10 // 已投递
+	AppStatusCandidate = 20 // 候选人/初筛通过
+	AppStatusInterview = 30 // 面试邀请
+	AppStatusPassed    = 40 // 通过/录用
+	AppStatusRejected  = 50 // 拒绝
 )
 
 // WorkNature

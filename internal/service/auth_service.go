@@ -81,7 +81,6 @@ func (s *AuthService) Register(req dto.RegisterRequest) (int, string, error) {
 			}
 			return tx.Create(&company).Error
 		}
-		return nil
 	})
 	if err != nil {
 		return 500, "系统错误", err
@@ -127,4 +126,36 @@ func (s *AuthService) Login(req dto.LoginRequest) (*dto.LoginResponseData, error
 			Status: statusStr,
 		},
 	}, nil
+}
+
+// ChangePassword 修改密码
+func (s *AuthService) ChangePassword(userID int, oldPassword, newPassword string) error {
+	// 1. 查询用户
+	var user model.User
+	if err := s.DB.Where("id = ?", userID).First(&user).Error; err != nil {
+		return errors.New("用户不存在")
+	}
+
+	// 2. 验证旧密码
+	if !utils.CheckPasswordHash(oldPassword, user.PasswordHash) {
+		return errors.New("旧密码错误")
+	}
+
+	// 3. 密码强度验证
+	if len(newPassword) < 6 {
+		return errors.New("新密码长度不能少于6位")
+	}
+
+	// 4. hash新密码
+	hashedPassword, err := utils.HashPassword(newPassword)
+	if err != nil {
+		return errors.New("密码加密失败")
+	}
+
+	// 5. 更新密码
+	if err := s.DB.Model(&user).Update("password_hash", hashedPassword).Error; err != nil {
+		return errors.New("密码更新失败")
+	}
+
+	return nil
 }

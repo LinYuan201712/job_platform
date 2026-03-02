@@ -10,7 +10,6 @@ type Resume struct {
 	FileUrl       string    `gorm:"column:file_url" json:"file_url"`
 	FileSize      int64     `gorm:"column:file_size" json:"file_size"`
 	UsageType     string    `gorm:"column:usage_type" json:"usage_type"`
-	TemplateID    int       `gorm:"column:template_id" json:"template_id"`
 	UploadedAt    time.Time `gorm:"column:uploaded_at;autoCreateTime" json:"uploaded_at"`
 }
 

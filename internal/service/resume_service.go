@@ -251,18 +251,12 @@ func (s *ResumeService) GetResumeFiles(studentUserID int) ([]dto.ResumeFileRespo
 
 	responses := make([]dto.ResumeFileResponse, 0, len(resumes))
 	for _, resume := range resumes {
-		var templateID *int64
-		if resume.TemplateID != 0 {
-			tempID := int64(resume.TemplateID)
-			templateID = &tempID
-		}
-
 		responses = append(responses, dto.ResumeFileResponse{
 			ID:         resume.ID,
 			FileName:   resume.FileName,
 			FileURL:    resume.FileUrl,
 			FileSize:   resume.FileSize,
-			TemplateID: templateID,
+			TemplateID: nil, // 数据库无template_id字段,始终返回nil
 			Usage:      resume.UsageType,
 			UploadedAt: resume.UploadedAt.Format("2006-01-02T15:04:05Z07:00"),
 		})
